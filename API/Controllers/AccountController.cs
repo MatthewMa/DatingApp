@@ -51,7 +51,7 @@ namespace API.Controllers
             var user = await _context.AppUsers.SingleOrDefaultAsync(u => u.UserName == loginDTO.UserName.ToLower());
             if (user == null)
             {
-                return Unauthorized("Invalid username");
+                return BadRequest("Invalid username");
             }
             using var hmac = new HMACSHA512(user.PasswordSalt);
             var hashPassword = hmac.ComputeHash(Encoding.UTF8.GetBytes(loginDTO.Password));
@@ -59,7 +59,7 @@ namespace API.Controllers
             {
                 if (user.PasswordHash[i] != hashPassword[i])
                 {
-                    return Unauthorized("Invalid password");
+                    return BadRequest("Invalid password");
                 }
             }
             // Set AccountLoginReturnDTO
