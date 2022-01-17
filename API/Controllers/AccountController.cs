@@ -2,6 +2,7 @@
 using API.DTOS;
 using API.Entities;
 using API.Interfaces;
+using API.Tools;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Cryptography;
@@ -25,7 +26,7 @@ namespace API.Controllers
         {
             if (await UserExists(registerDTO.UserName))
             {
-                return BadRequest("User name has existed.");
+                return BadRequest(Constants.REGISTER_USERNAME_EXIST);
             }
             using var hmac = new HMACSHA512();
             var user = new AppUser
@@ -51,7 +52,7 @@ namespace API.Controllers
             var user = await _context.AppUsers.SingleOrDefaultAsync(u => u.UserName == loginDTO.UserName.ToLower());
             if (user == null)
             {
-                return BadRequest("Invalid username");
+                return BadRequest(Constants.LOGIN_USERNAME_INVALID);
             }
             using var hmac = new HMACSHA512(user.PasswordSalt);
             var hashPassword = hmac.ComputeHash(Encoding.UTF8.GetBytes(loginDTO.Password));
@@ -59,7 +60,7 @@ namespace API.Controllers
             {
                 if (user.PasswordHash[i] != hashPassword[i])
                 {
-                    return BadRequest("Invalid password");
+                    return BadRequest(Constants.LOGIN_PASSWORD_INVALID);
                 }
             }
             // Set AccountLoginReturnDTO
