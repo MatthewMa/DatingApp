@@ -7,6 +7,7 @@ namespace API
     {
         public static async Task Main(string[] args)
         {
+            // Seed data and update database automatically
             var host = CreateHostBuilder(args).Build();
             using var scope = host.Services.CreateScope();
             var services = scope.ServiceProvider;

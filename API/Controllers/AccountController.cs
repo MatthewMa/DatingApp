@@ -3,6 +3,7 @@ using API.DTOS;
 using API.Entities;
 using API.Interfaces;
 using API.Tools;
+using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Cryptography;
@@ -14,11 +15,13 @@ namespace API.Controllers
     {
         private readonly DataContext _context;
         private readonly ITokenService _tokenService;
+        private readonly IMapper _mapper;
 
-        public AccountController(DataContext context, ITokenService tokenService)
+        public AccountController(DataContext context, ITokenService tokenService, IMapper mapper)
         {
             _context = context;
             _tokenService = tokenService;
+            _mapper = mapper;
         }
 
         [HttpPost("register")]
@@ -29,19 +32,20 @@ namespace API.Controllers
                 return BadRequest(Constants.REGISTER_USERNAME_EXIST);
             }
             using var hmac = new HMACSHA512();
-            var user = new AppUser
-            {
-                UserName = registerDTO.UserName.ToLower(),
-                PasswordHash = hmac.ComputeHash(Encoding.UTF8.GetBytes(registerDTO.Password)),
-                PasswordSalt = hmac.Key
-            };
+            var user = _mapper.Map<AppUser>(registerDTO);
+            user.UserName = registerDTO.UserName.ToLower();
+            user.PasswordHash = hmac.ComputeHash(Encoding.UTF8.GetBytes(registerDTO.Password));
+            user.PasswordSalt = hmac.Key;            
             _context.AppUsers.Add(user);
             await _context.SaveChangesAsync();
             // Set AccountLoginReturnDTO
             AccountReturnDTO accountLoginReturnDTO = new AccountReturnDTO
             {
                 UserName = user.UserName,
-                Token = _tokenService.CreateToken(user)
+                Token = _tokenService.CreateToken(user),
+                PhotoUrl = user.Photos?.FirstOrDefault(p => p.IsMain).Url,
+                KnownAs = user.KnownAs,
+                Gender = user.Gender
             };
             return Ok(accountLoginReturnDTO);
         }
@@ -49,7 +53,7 @@ namespace API.Controllers
         [HttpPost("login")]
         public async Task<ActionResult<AccountReturnDTO>> Login(AccountLoginDTO loginDTO)
         {            
-            var user = await _context.AppUsers.SingleOrDefaultAsync(u => u.UserName == loginDTO.UserName.ToLower());
+            var user = await _context.AppUsers.Include(u => u.Photos).SingleOrDefaultAsync(u => u.UserName == loginDTO.UserName.ToLower());
             if (user == null)
             {
                 return BadRequest(Constants.LOGIN_USERNAME_INVALID);
@@ -67,11 +71,15 @@ namespace API.Controllers
             AccountReturnDTO accountLoginReturnDTO = new AccountReturnDTO
             {
                 UserName = user.UserName,
-                Token = _tokenService.CreateToken(user)
+                Token = _tokenService.CreateToken(user),
+                PhotoUrl = user.Photos?.FirstOrDefault(p => p.IsMain).Url,
+                KnownAs = user.KnownAs,
+                Gender = user.Gender
             };
             return Ok(accountLoginReturnDTO);
         }
 
+       
         private async Task<bool> UserExists(string username)
         {
             return await _context.AppUsers.AnyAsync(u => u.UserName == username.ToLower());           

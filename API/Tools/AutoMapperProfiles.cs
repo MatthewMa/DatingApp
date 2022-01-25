@@ -13,6 +13,11 @@ namespace API.Tools
                 opt => opt.MapFrom(src => src.Photos.FirstOrDefault(p => p.IsMain).Url))
                 .ForMember(dest => dest.Age, opt => opt.MapFrom(src => src.DateOfBirth.CalculateAge()));
             CreateMap<Photo, PhotoDTO>();
+            CreateMap<MemberUpdateDTO, AppUser>();
+            CreateMap<AccountRegisterDTO, AppUser>();
+            CreateMap<AppUser, LikeDTO>().ForMember(dest => dest.PhotoUrl,
+                opt => opt.MapFrom(src => src.Photos.FirstOrDefault(p => p.IsMain).Url))
+                .ForMember(dest => dest.Age, opt => opt.MapFrom(src => src.DateOfBirth.CalculateAge()));
         }
     }
 }
