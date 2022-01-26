@@ -18,6 +18,10 @@ namespace API.Tools
             CreateMap<AppUser, LikeDTO>().ForMember(dest => dest.PhotoUrl,
                 opt => opt.MapFrom(src => src.Photos.FirstOrDefault(p => p.IsMain).Url))
                 .ForMember(dest => dest.Age, opt => opt.MapFrom(src => src.DateOfBirth.CalculateAge()));
+            CreateMap<Message, MessageDTO>().ForMember(dest => dest.SenderPhotoUrl,
+                opt => opt.MapFrom(src => src.Sender.Photos.FirstOrDefault(p => p.IsMain).Url))
+                .ForMember(dest => dest.ReceipientPhotoUrl,
+                opt => opt.MapFrom(src => src.Receipient.Photos.FirstOrDefault(p => p.IsMain).Url));
         }
     }
 }

@@ -1,10 +1,14 @@
-﻿using API.DTOS;
+﻿using API.Data;
+using API.DTOS;
 using API.Extensions;
 using API.Interfaces;
+using API.Tools;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers
 {
+    [Authorize]
     public class LikesController : BaseApiController
     {
         private readonly IUserRepository _userRepository;
@@ -38,12 +42,14 @@ namespace API.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<LikeDTO>>> GetLikedUsers([FromQuery] string predicate = "liked")
+        public async Task<ActionResult<IEnumerable<LikeDTO>>> GetLikedUsers([FromQuery] LikeParams likeParams)
         {
             int userId = User.GetUserId();
-            if (userId == 0) return BadRequest("User does not exist");            
-            var result = await _likesRepository.GetUserLikesAsync(predicate, userId);
-            return Ok(result);
+            if (userId == 0) return BadRequest("User does not exist");
+            likeParams.UserId = userId;
+            var result = await _likesRepository.GetUserLikesAsync(likeParams);
+            Response.AddPaginationHeader(likeParams.PageNumber, likeParams.PageSize, result.TotalCount, result.TotalPages);
+            return Ok(result.List);
         }
     }   
 }

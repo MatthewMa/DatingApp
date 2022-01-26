@@ -2,6 +2,7 @@
 using API.Entities;
 using API.Extensions;
 using API.Interfaces;
+using API.Tools;
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
@@ -24,23 +25,28 @@ namespace API.Data
             return await _context.Likes.FindAsync(sourceUserId, likedUserId);
         }
 
-        public async Task<IEnumerable<LikeDTO>> GetUserLikesAsync(string predicate, int userId)
+        public async Task<PagedList<LikeDTO>> GetUserLikesAsync(LikeParams likeParams)
         {
-            var users = _context.AppUsers.OrderBy(u => u.UserName).AsQueryable();
-            var likes = _context.Likes.AsQueryable();
-            if (predicate == "liked")
+            var users = _context.AppUsers.AsQueryable();
+            var likes = _context.Likes.AsQueryable();           
+            if (likeParams.Predicate == "likedBy")
             {
-                likes = likes.Where(like => like.SourceUserId == userId);
+                likes = likes.Where(like => like.LikedUserId == likeParams.UserId);
+                users = likes.Select(like => like.SourceUser);
+            } 
+            else
+            {
+                likes = likes.Where(like => like.SourceUserId == likeParams.UserId);
                 users = likes.Select(like => like.LikedUser);
             }
-
-            if (predicate == "likedBy")
+            users = likeParams.OrderBy switch
             {
-                likes = likes.Where(like => like.LikedUserId == userId);
-                users = likes.Select(like => like.SourceUser);
-            }
-
-            return await users.ProjectTo<LikeDTO>(_mapper.ConfigurationProvider).ToListAsync();
+                "created" => users.OrderByDescending(u => u.Created),
+                "age" => users.OrderByDescending(u => u.DateOfBirth),
+                _ => users.OrderByDescending(u => u.LastActive),
+            };
+            return await PagedList<LikeDTO>.CreateAsync(users.ProjectTo<LikeDTO>(_mapper.ConfigurationProvider)
+                .AsNoTracking(), likeParams.PageNumber, likeParams.PageSize);
         }
 
         public async Task<AppUser> GetUserWithLikesAsync(int userId)
