@@ -61,13 +61,33 @@ namespace API.Controllers
         }
 
         [HttpGet("thread/{username}")]
-        public async Task<ActionResult<IEnumerable<MessageDTO>>> GetMessages(string username)
+        public async Task<ActionResult<IEnumerable<MessageDTO>>> GetMessagesThread(string username)
         {
             if (string.IsNullOrEmpty(username)) return BadRequest("Username is null");
             var senderUserName = User.GetUserName();
             var thread = await _messageRepository.GetMessageThread(senderUserName, username);
             if (thread == null) return NotFound("Thread not found");
             return Ok(thread);
+        }
+
+        [HttpDelete("{messageId:int}")]
+        public async Task<ActionResult> DeleteMessage(int messageId)
+        {
+            if (messageId == 0) return BadRequest("Message id is invalid");
+            var message = await _messageRepository.GetMessageByIdAsync(messageId);
+            if (message == null) return NotFound("Message not found");
+            var username = User.GetUserName();
+            if (message.Sender.UserName != username && message.Receipient.UserName != username)
+                return Unauthorized();
+            if (message.Sender.UserName == username) 
+                message.SenderDeleted = true;
+            if (message.Receipient.UserName == username)
+                message.RecipientDeleted = true;
+            if (message.SenderDeleted && message.RecipientDeleted)
+                _messageRepository.DeleteMessage(message);
+            if (await _messageRepository.SaveAllAsync())
+                return Ok();
+            return BadRequest("Problem deleting the message");
         }
     }
 }

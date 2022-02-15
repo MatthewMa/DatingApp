@@ -22,6 +22,7 @@ namespace API.Tools
                 opt => opt.MapFrom(src => src.Sender.Photos.FirstOrDefault(p => p.IsMain).Url))
                 .ForMember(dest => dest.ReceipientPhotoUrl,
                 opt => opt.MapFrom(src => src.Receipient.Photos.FirstOrDefault(p => p.IsMain).Url));
+            CreateMap<ApiExceptionCreateDTO, ApiException>();
         }
     }
 }
