@@ -41,7 +41,7 @@ namespace API.Controllers
             Response.AddPaginationHeader(userParams.PageNumber, userParams.PageSize, members.TotalCount, members.TotalPages);
             return Ok(members.List);
         }
-
+       
         [HttpGet("{id:int}")]
         public async Task<ActionResult<MemberDTO>> GetAppUserById(int id)
         {
